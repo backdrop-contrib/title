@@ -562,7 +562,7 @@ function title_entity_language($entity_type, $entity) {
     $langcode = $handler->getLanguage();
   }
   else {
-    $langcode = $entity->langcode;//entity_language($entity_type, $entity);
+    $langcode = $entity->langcode;
   }
   return !empty($langcode) ? $langcode : LANGUAGE_NONE;
 }
