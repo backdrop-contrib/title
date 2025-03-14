@@ -49,6 +49,11 @@ function title_module_implements_alter(&$implementations, $hook) {
  */
 function title_entity_info_alter(&$info) {
   foreach ($info as $entity_type => $entity_info) {
+    // this is a hack for
+    // https://github.com/backdrop/backdrop-issues/issues/6867
+    if ($entity_type == 'taxonomy_term') {
+      $info[$entity_type]['entity keys']['label'] = 'name';
+    }
     if (!empty($entity_info['fieldable']) && !empty($info[$entity_type]['field replacement'])) {
       foreach ($info[$entity_type]['field replacement'] as $legacy_field => $data) {
         // Provide defaults for the replacing field name.
