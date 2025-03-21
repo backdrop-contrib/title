@@ -54,6 +54,9 @@ function title_entity_info_alter(&$info) {
     if ($entity_type == 'taxonomy_term') {
       $info[$entity_type]['entity keys']['label'] = 'name';
     }
+    else if ($entity_type == 'node') {
+      $info[$entity_type]['entity keys']['label'] = 'title';
+    }
     if (!empty($entity_info['fieldable']) && !empty($info[$entity_type]['field replacement'])) {
       foreach ($info[$entity_type]['field replacement'] as $legacy_field => $data) {
         // Provide defaults for the replacing field name.
