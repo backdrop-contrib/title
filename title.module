@@ -48,7 +48,7 @@ function title_module_implements_alter(&$implementations, $hook) {
  * Implements hook_entity_info_alter().
  */
 function title_entity_info_alter(&$info) {
-  foreach ($info as $entity_type => $entity_info) {
+  foreach ($info as $entity_type => &$entity_info) {
     // this is a hack for
     // https://github.com/backdrop/backdrop-issues/issues/6867
     if ($entity_type == 'taxonomy_term') {
@@ -82,6 +82,7 @@ function title_entity_info_alter(&$info) {
           if (isset($info[$entity_type]['label callback'])) {
             $info[$entity_type]['label fallback']['title'] = $info[$entity_type]['label callback'];
           }
+
           $info[$entity_type]['label callback'] = 'title_entity_label';
           $fr_info += array('preprocess_key' => $info[$entity_type]['entity keys']['label']);
         }
@@ -552,6 +553,51 @@ function title_active_language($langcode = NULL) {
 }
 
 /**
+ * This is a copy of entity_language from Drupal, which was removed.
+ * Because it uses the $info['language callback'] property, it
+ * returns different values than title_entity_language. I'm currently
+ * not sure if the elseif branch returns a correct value because I don't
+ * know how to recreate that state.
+ *
+ * Returns the language of an entity.
+ *
+ * @param $entity_type
+ *   The entity type; e.g., 'node' or 'user'.
+ * @param $entity
+ *   The entity for which to get the language.
+ *
+ * @return
+ *   A valid language code or NULL if the entity has no language support.
+ */
+function title_entity_language_backdrop_shim($entity_type, $entity) {
+  $info = entity_get_info($entity_type);
+
+  // Invoke the callback to get the language. If there is no callback, try to
+  // get it from a property of the entity, otherwise NULL.
+  if (isset($info['language callback']) && function_exists($info['language callback'])) {
+    $langcode = $info['language callback']($entity_type, $entity);
+
+  }
+  elseif (!empty($info['entity keys']['language']) && isset($entity->{$info['entity keys']['language']})) {
+    $langcode = $entity->{$info['entity keys']['language']};
+  }
+  else {
+    // The value returned in D8 would be LANGUAGE_NONE, we cannot use it here to
+    // preserve backward compatibility. In fact this function has been
+    // introduced very late in the D7 life cycle, mainly as the proper default
+    // for field_attach_form(). By returning LANGUAGE_NONE when no language
+    // information is available, we would introduce a potentially BC-breaking
+    // API change, since field_attach_form() defaults to the default language
+    // instead of LANGUAGE_NONE. Moreover this allows us to distinguish between
+    // entities that have no language specified from ones that do not have
+    // language support at all.
+    $langcode = NULL;
+  }
+
+  return $langcode;
+}
+
+/**
  * Provide the original entity language.
  *
  * If a language property is defined for the current entity we synchronize the
@@ -566,12 +612,12 @@ function title_active_language($langcode = NULL) {
  */
 function title_entity_language($entity_type, $entity) {
   $langcode = NULL;
-  if (module_exists('translation') && entity_translation_enabled($entity_type)) {
+  if (module_exists('entity_translation') && entity_translation_enabled($entity_type)) {
     $handler = entity_translation_get_handler($entity_type, $entity, TRUE);
     $langcode = $handler->getLanguage();
   }
-  else if (isset($entity->langcode)) {
-    $langcode = $entity->langcode;
+  else {
+    $langcode = title_entity_language_backdrop_shim($entity_type, $entity);
   }
   return !empty($langcode) ? $langcode : LANGUAGE_NONE;
 }
@@ -624,7 +670,7 @@ function title_field_attach_submit($entity_type, $entity, $form, &$form_state) {
     // backdrop_array_set_nested_value().
     $values = $form_state['values'];
     $values = backdrop_array_get_nested_value($values, $form['#parents']);
-    $langcode = title_entity_language($entity_type, $entity);
+    $langcode = title_entity_language_backdrop_shim($entity_type, $entity);
 
     foreach ($fr_info as $legacy_field => $info) {
       if (!empty($form[$legacy_field]['#field_replacement'])) {
@@ -765,7 +811,7 @@ function title_tokens_alter(array &$replacements, array $context) {
       // the current working language, that is the entity language. Modules
       // using Title tokens in display contexts need to specify the current
       // display language.
-      $langcode = isset($options['language']) ? $options['language']->langcode : title_entity_language($entity_type, $entity);
+      $langcode = isset($options['language']) ? $options['language']->langcode : title_entity_language_backdrop_shim($entity_type, $entity);
 
       if ($fr_info) {
         foreach ($fr_info as $legacy_field => $info) {
