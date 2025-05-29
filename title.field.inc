@@ -130,7 +130,9 @@ function title_field_formatter_view($entity_type, $entity, $field, $instance, $l
         $variables['element']['#attributes'] = array('class' => $settings['title_class']);
       }
 
-      $output = theme('html_tag', $variables);
+      // Backdrop changed theme_html_tag to theme_head_tag only because it was deemed
+      // silly, but it's actually useful here and ok to use in the body despite the name.
+      $output = theme('head_tag', $variables);
     }
 
     $element = array(
