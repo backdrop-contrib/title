@@ -1043,8 +1043,7 @@ function title_taxonomy_allowed_values($field) {
   if ($bundle && ($label = title_field_replacement_get_label_field('taxonomy_term', $bundle))) {
     $options = array();
     foreach ($field['settings']['allowed_values'] as $tree) {
-      $vocabulary = taxonomy_vocabulary_machine_name_load($tree['vocabulary']);
-      if ($vocabulary && ($terms = taxonomy_get_tree($vocabulary->vid, $tree['parent'], NULL, TRUE))) {
+      if (isset($tree['vocabulary']) && ($terms = taxonomy_get_tree($tree['vocabulary'], $tree['parent'], NULL, TRUE))) {
         foreach ($terms as $term) {
           $options[$term->tid] = str_repeat('-', $term->depth) . entity_label('taxonomy_term', $term);
         }
