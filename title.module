@@ -116,11 +116,12 @@ function title_field_replacement_info($entity_type, $legacy_field = NULL) {
 /**
  * Implements callback_entity_info_label().
  */
-function title_entity_label($entity, $type, $langcode = NULL) {
+function title_entity_label($entity, $langcode = NULL) {
+  $type= $entity->entityType();
   $entity_info = entity_get_info($type);
   $legacy_field = $entity_info['entity keys']['label'];
   $info = $entity_info['field replacement'][$legacy_field];
-  list(, , $bundle) = entity_extract_ids($type, $entity);
+  $bundle = $entity->bundle();
 
   // If field replacement is enabled we use the replacing field value.
   if (title_field_replacement_enabled($type, $bundle, $legacy_field)) {
