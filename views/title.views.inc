@@ -12,7 +12,7 @@ function title_field_views_data_alter(&$data) {
           $field = field_info_field($replacement['field']['field_name']);
           if ($field) {
             $table = _field_sql_storage_tablename($field);
-            if (isset($data[$table][$field['field_name']])) {
+            if (isset($data[$table]) && isset($data[$table][$field['field_name']])) {
               $data[$table][$field['field_name']]['field']['handler'] = 'views_handler_title_field';
             }
           }
